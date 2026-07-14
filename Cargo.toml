@@ -1,0 +1,20 @@
+[package]
+name = "nggedhekake-gambar"
+version = "0.1.0"
+edition = "2024"
+build = "build.rs"
+license = "MIT OR Apache-2.0"
+description = "Rust-native local image upscaler"
+repository = "https://github.com/bangadam/nggedhekake-gambar"
+
+[dependencies]
+image = { version = "0.25.10", default-features = false, features = ["jpeg", "png", "webp"] }
+rfd = "0.17.2"
+slint = { version = "1.17.1", features = ["unstable-winit-030"] }
+thiserror = "2.0.17"
+
+[build-dependencies]
+slint-build = "1.17.1"
+
+[dev-dependencies]
+tempfile = "3.23.0"
