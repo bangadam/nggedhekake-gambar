@@ -14,7 +14,7 @@ Build a lighter local desktop app for image upscaling with:
 
 ## Core product call
 
-- **Engine:** `upscayl-ncnn` / `Real-ESRGAN-ncnn-vulkan` style binary
+- **Engine:** pinned official `Real-ESRGAN-ncnn-vulkan` v0.2.0 binary
 - **Inference runtime:** NCNN
 - **Acceleration:** Vulkan
 - **App shell:** Rust-native desktop app
@@ -24,18 +24,21 @@ Build a lighter local desktop app for image upscaling with:
 
 - PRD: `docs/PRD.md`
 - Design system: `docs/design-system.md`
+- Implementation issues: https://github.com/bangadam/nggedhekake-gambar/issues
 
 ## v1 priorities
 
-1. Single image upscale
-2. Batch folder upscale
-3. Bundled + custom model support
-4. Native progress + cancellation
-5. Output preview and compare
-6. Diagnostics for engine/model/Vulkan readiness
+1. Single-image 2× and 4× upscale
+2. Curated Photo & general and Illustration models
+3. Native phase progress and cancellation
+4. Swipe comparison and explicit Save flow
+5. Diagnostics for engine, model, and Vulkan readiness
+6. Signed macOS/Windows and packaged Linux releases
 
 ## Non-goals for v1
 
+- batch folder processing
+- custom models and engines
 - cloud inference
 - video upscaling
 - training/fine-tuning

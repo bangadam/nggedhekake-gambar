@@ -1,7 +1,7 @@
 # Nggedhekaké Gambar v1 PRD
 
-Status: ready-for-agent
+Tracker: [GitHub Issues](https://github.com/bangadam/nggedhekake-gambar/issues)
 
 The complete, canonical PRD is maintained at [`docs/PRD.md`](../../docs/PRD.md).
 
-This tracker entry intentionally points to the canonical document so product decisions, acceptance seams, and release gates cannot drift between duplicate copies. The canonical PRD was synthesized from the completed grill-me decision session and is the implementation contract for this issue.
+The approved vertical slices are published as GitHub issues [#1–#17](https://github.com/bangadam/nggedhekake-gambar/issues). This local directory is retained as the approved source snapshot; GitHub is authoritative for issue status, labels, and dependencies.

@@ -185,4 +185,4 @@ All image processing remains local. The app normalizes input color to sRGB, pres
 - The upstream v0.2.0 release provides cross-platform executable artifacts; the inspected macOS artifact is universal, while v1 support remains intentionally arm64-only.
 - Official NCNN model provenance and redistribution terms must be recorded before packaging. A model found in a third-party bundle is not acceptable provenance.
 - Slint attribution and all engine/model notices must be visible from an About/Licenses surface and included with distributed artifacts.
-- The local issue-tracker copy of this PRD is marked `ready-for-agent`. A public repository and signing identities remain release prerequisites, not reasons to expand the product scope.
+- Implementation is tracked in [GitHub issues #1–#17](https://github.com/bangadam/nggedhekake-gambar/issues). The public repository now exists; signing identities remain release prerequisites, not reasons to expand product scope.
