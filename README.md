@@ -18,7 +18,7 @@ Enhance PNG, JPEG, and WebP images locally—without uploading them to a server.
 
 ## Overview
 
-Nggedhekaké Gambar is a Rust-native desktop application for single-image upscaling. A Dioxus interface runs inside Tauri while an `upscayl-ncnn` sidecar performs inference on the local GPU through NCNN and Vulkan/MoltenVK.
+Nggedhekaké Gambar is a Rust-native desktop application for single-image upscaling. A Dioxus interface runs inside Tauri while the selected NCNN/Vulkan sidecar performs inference on the local GPU through Vulkan/MoltenVK.
 
 The current build focuses on a small, dependable workflow: select an image, choose the output settings, run the model, and compare the result with an interactive before/after slider.
 
@@ -29,6 +29,7 @@ The current build focuses on a small, dependable workflow: select an image, choo
 - PNG, JPEG, and WebP input and output.
 - 2×, 3×, and 4× output scaling.
 - Bundled `realesrgan-x4plus` NCNN model.
+- Selectable Upscayl NCNN and official Real-ESRGAN NCNN processing engines.
 - GPU-accelerated inference through Vulkan/MoltenVK.
 - Live progress reporting with cancellation support.
 - Centered, aspect-ratio-safe image previews.
@@ -42,7 +43,7 @@ The current build focuses on a small, dependable workflow: select an image, choo
 | Desktop shell | [Tauri 2](https://v2.tauri.app/) |
 | User interface | [Dioxus 0.7](https://dioxuslabs.com/) compiled to WebAssembly |
 | Application language | [Rust](https://www.rust-lang.org/) |
-| Inference sidecar | [upscayl-ncnn](https://github.com/upscayl/upscayl-ncnn) |
+| Inference sidecars | [upscayl-ncnn](https://github.com/upscayl/upscayl-ncnn) and [official Real-ESRGAN NCNN Vulkan](https://github.com/xinntao/Real-ESRGAN-ncnn-vulkan) |
 | Neural network runtime | [Tencent NCNN](https://github.com/Tencent/ncnn) |
 | GPU backend | Vulkan through MoltenVK on macOS |
 | Bundled model | Real-ESRGAN `realesrgan-x4plus` |
@@ -53,7 +54,7 @@ The current build focuses on a small, dependable workflow: select an image, choo
 flowchart LR
     UI["Dioxus UI<br/>WebAssembly"]
     API["Tauri commands<br/>Rust"]
-    BIN["upscayl-bin<br/>sidecar"]
+    BIN["Selected NCNN/Vulkan<br/>sidecar"]
     MODEL["Real-ESRGAN<br/>NCNN model"]
     GPU["NCNN + Vulkan<br/>MoltenVK"]
 
@@ -68,7 +69,7 @@ The frontend does not read or transform image data itself. It sends filesystem p
 
 ## Platform support
 
-The repository currently bundles a universal macOS sidecar containing both `arm64` and `x86_64` architectures.
+The repository currently bundles two universal macOS sidecars containing both `arm64` and `x86_64` architectures.
 
 | Platform | Status |
 | --- | --- |
@@ -153,7 +154,9 @@ Generated artifacts are written beneath `target/release/bundle/`. The build incl
 │       └── image_slider.rs      # Before/after comparison control
 └── src-tauri/
     ├── binaries/
-    │   └── upscayl-bin          # Universal macOS inference sidecar
+    │   ├── upscayl-bin                    # Upscayl NCNN sidecar
+    │   ├── realesrgan-ncnn-vulkan         # Official Real-ESRGAN sidecar
+    │   └── REAL_ESRGAN_NCNN_VULKAN_LICENSE
     ├── models/
     │   ├── realesrgan-x4plus.bin
     │   └── realesrgan-x4plus.param
@@ -165,9 +168,12 @@ Generated artifacts are written beneath `target/release/bundle/`. The build incl
 
 The bundled components are reproducible from these upstream sources:
 
-- Engine repository: [`upscayl/upscayl-ncnn`](https://github.com/upscayl/upscayl-ncnn)
-- Engine release: [`20251207-174704`](https://github.com/upscayl/upscayl-ncnn/releases/tag/20251207-174704)
-- macOS archive: `upscayl-bin-20251207-174704-macos.zip`
+- Upscayl engine repository: [`upscayl/upscayl-ncnn`](https://github.com/upscayl/upscayl-ncnn)
+- Upscayl engine release: [`20251207-174704`](https://github.com/upscayl/upscayl-ncnn/releases/tag/20251207-174704)
+- Upscayl macOS archive: `upscayl-bin-20251207-174704-macos.zip`
+- Official engine repository: [`xinntao/Real-ESRGAN-ncnn-vulkan`](https://github.com/xinntao/Real-ESRGAN-ncnn-vulkan)
+- Official engine release: [`v0.2.0`](https://github.com/xinntao/Real-ESRGAN-ncnn-vulkan/releases/tag/v0.2.0)
+- Official macOS archive: `realesrgan-ncnn-vulkan-v0.2.0-macos.zip`
 - Model architecture: [`xinntao/Real-ESRGAN`](https://github.com/xinntao/Real-ESRGAN)
 - Exact NCNN model revision: [`upscayl/upscayl@773ca39`](https://github.com/upscayl/upscayl/commit/773ca39daafbac3f0fea75885195cb68a8a3ea27)
 - [`realesrgan-x4plus.bin`](https://github.com/upscayl/upscayl/blob/773ca39daafbac3f0fea75885195cb68a8a3ea27/resources/models/realesrgan-x4plus.bin)
@@ -201,7 +207,7 @@ For a new platform, include the matching sidecar binary, update Tauri resources,
 
 Nggedhekaké Gambar is licensed under the [GNU Affero General Public License v3.0](./LICENSE).
 
-The bundled Upscayl engine and model assets retain their respective upstream copyright and license terms. See the exact source links in [Model and engine provenance](#model-and-engine-provenance) when redistributing binaries.
+The bundled Upscayl engine and model assets retain their upstream AGPL terms. The official Real-ESRGAN NCNN Vulkan engine is distributed under its upstream MIT license, included at `src-tauri/binaries/REAL_ESRGAN_NCNN_VULKAN_LICENSE`. See the exact source links in [Model and engine provenance](#model-and-engine-provenance) when redistributing binaries.
 
 ## Acknowledgements
 
@@ -209,6 +215,7 @@ This project builds on the work of:
 
 - [Upscayl](https://github.com/upscayl/upscayl) and [upscayl-ncnn](https://github.com/upscayl/upscayl-ncnn)
 - [Real-ESRGAN](https://github.com/xinntao/Real-ESRGAN)
+- [Real-ESRGAN NCNN Vulkan](https://github.com/xinntao/Real-ESRGAN-ncnn-vulkan)
 - [Tencent NCNN](https://github.com/Tencent/ncnn)
 - [Tauri](https://github.com/tauri-apps/tauri)
 - [Dioxus](https://github.com/DioxusLabs/dioxus)

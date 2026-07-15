@@ -11,6 +11,7 @@ struct EmptyArgs {}
 struct UpscaleArgs {
     image_path: String,
     output_folder: String,
+    engine: String,
     model: String,
     scale: u32,
     format: String,
@@ -41,6 +42,7 @@ pub fn Sidebar() -> Element {
         .map(display_name)
         .unwrap_or_else(|| "Choose destination".into());
     let selected_model = (state.selected_model)();
+    let selected_engine = (state.selected_engine)();
     let selected_scale = (state.scale)();
     let selected_format = (state.format)();
     let is_processing = (state.is_processing)();
@@ -90,6 +92,7 @@ pub fn Sidebar() -> Element {
         let args = UpscaleArgs {
             image_path,
             output_folder,
+            engine: (state.selected_engine)(),
             model: (state.selected_model)(),
             scale: (state.scale)(),
             format: (state.format)(),
@@ -152,8 +155,8 @@ pub fn Sidebar() -> Element {
                     div { class: "step-heading",
                         span { class: "step-number", "02" }
                         div {
-                            h2 { "Choose model" }
-                            p { "Detail recovery profile" }
+                            h2 { "Model & engine" }
+                            p { "Choose the inference pipeline" }
                         }
                     }
                     select {
@@ -167,6 +170,17 @@ pub fn Sidebar() -> Element {
                             for model in state.models.read().iter() {
                                 option { value: "{model}", "{model}" }
                             }
+                        }
+                    }
+                    div { class: "format-row engine-row",
+                        label { r#for: "engine", "ENGINE" }
+                        select {
+                            id: "engine",
+                            value: "{selected_engine}",
+                            disabled: is_processing,
+                            oninput: move |event| state.selected_engine.set(event.value()),
+                            option { value: "upscayl", "Upscayl NCNN" }
+                            option { value: "real-esrgan", "Official Real-ESRGAN" }
                         }
                     }
                 }

@@ -1,4 +1,4 @@
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use std::{
     fs,
     io::{BufRead, BufReader},
@@ -17,6 +17,22 @@ struct ActiveProcess {
 
 #[derive(Default)]
 struct ProcessState(Mutex<Option<ActiveProcess>>);
+
+#[derive(Deserialize)]
+#[serde(rename_all = "kebab-case")]
+enum UpscaleEngine {
+    Upscayl,
+    RealEsrgan,
+}
+
+impl UpscaleEngine {
+    fn binary_resource(&self) -> &'static str {
+        match self {
+            Self::Upscayl => "binaries/upscayl-bin",
+            Self::RealEsrgan => "binaries/realesrgan-ncnn-vulkan",
+        }
+    }
+}
 
 #[derive(Clone, Serialize)]
 #[serde(rename_all = "camelCase")]
@@ -123,6 +139,7 @@ fn upscale_image(
     state: State<'_, ProcessState>,
     image_path: String,
     output_folder: String,
+    engine: UpscaleEngine,
     model: String,
     scale: u32,
     format: String,
@@ -152,7 +169,7 @@ fn upscale_image(
         return Err(format!("Model is not available: {model}"));
     }
 
-    let binary_path = resource_path(&app, "binaries/upscayl-bin")?;
+    let binary_path = resource_path(&app, engine.binary_resource())?;
     let output = output_file(&input, &folder, scale, &format);
 
     let mut process = Command::new(binary_path);
@@ -304,4 +321,26 @@ pub fn run() {
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
+}
+
+#[cfg(test)]
+mod tests {
+    use super::UpscaleEngine;
+
+    #[test]
+    fn engine_names_resolve_to_their_bundled_executables() {
+        let upscayl: UpscaleEngine = serde_json::from_str("\"upscayl\"").unwrap();
+        let official: UpscaleEngine = serde_json::from_str("\"real-esrgan\"").unwrap();
+
+        assert_eq!(upscayl.binary_resource(), "binaries/upscayl-bin");
+        assert_eq!(
+            official.binary_resource(),
+            "binaries/realesrgan-ncnn-vulkan"
+        );
+    }
+
+    #[test]
+    fn unknown_engine_name_is_rejected() {
+        assert!(serde_json::from_str::<UpscaleEngine>("\"unknown\"").is_err());
+    }
 }

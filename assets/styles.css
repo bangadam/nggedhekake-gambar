@@ -282,6 +282,11 @@ select:disabled {
   font-weight: 700;
 }
 
+.engine-row select {
+  width: 190px;
+  font-size: 0.6rem;
+}
+
 .primary-action {
   display: flex;
   width: 100%;

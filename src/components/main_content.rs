@@ -19,6 +19,11 @@ pub fn MainContent() -> Element {
     let progress = (state.progress)().clamp(0.0, 100.0);
     let scale_label = (state.scale)();
     let format_label = (state.format)().to_uppercase();
+    let engine_label = if (state.selected_engine)() == "real-esrgan" {
+        "OFFICIAL"
+    } else {
+        "UPSCAYL"
+    };
     let progress_message = (state.progress_message)();
     let progress_label = if progress > 0.0 {
         format!("{progress:.0}%")
@@ -54,6 +59,7 @@ pub fn MainContent() -> Element {
                 div { class: "workspace-meta",
                     span { "{scale_label}×" }
                     span { "{format_label}" }
+                    span { "{engine_label}" }
                     span { class: "status-dot", "LOCAL" }
                 }
             }
