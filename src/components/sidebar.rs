@@ -1,22 +1,7 @@
-use crate::state::{AppState, invoke_command};
+use crate::state::{AppState, EmptyArgs, RunState, invoke_command};
 use dioxus::prelude::*;
-use serde::Serialize;
 use std::path::Path;
-
-#[derive(Serialize)]
-struct EmptyArgs {}
-
-#[derive(Serialize)]
-#[serde(rename_all = "camelCase")]
-struct UpscaleArgs {
-    image_path: String,
-    output_folder: String,
-    engine: String,
-    model: String,
-    scale: u32,
-    format: String,
-    gpu_id: Option<i32>,
-}
+use upscale_contract::{OutputFormat, UpscaleEngine};
 
 fn display_name(path: &str) -> String {
     Path::new(path)
@@ -41,87 +26,39 @@ pub fn Sidebar() -> Element {
         .as_deref()
         .map(display_name)
         .unwrap_or_else(|| "Choose destination".into());
-    let selected_model = (state.selected_model)();
-    let selected_engine = (state.selected_engine)();
-    let selected_scale = (state.scale)();
-    let selected_format = (state.format)();
-    let is_processing = (state.is_processing)();
-    let can_upscale = state.image_path.read().is_some()
-        && state.output_folder.read().is_some()
-        && !state.models.read().is_empty()
-        && !is_processing;
+    let selected_model = state.selected_model.read().clone();
+    let selected_scale = *state.scale.read();
+    let selected_format = *state.format.read();
+    let selected_format_value = selected_format.extension();
+    let run_state = state.run_state.read().clone();
+    let controls_disabled = run_state.is_active();
+    let can_upscale = state.can_start();
 
     let select_image = move |_| async move {
-        let mut image_path = state.image_path;
-        let mut upscaled_path = state.upscaled_image_path;
-        let mut error = state.error;
         match invoke_command("select_image", &EmptyArgs {}).await {
             Ok(value) => {
                 if let Some(path) = value.as_string() {
-                    image_path.set(Some(path));
-                    upscaled_path.set(None);
-                    error.set(None);
+                    state.set_image_path(path);
+                    state.ui_error.set(None);
                 }
             }
-            Err(message) => error.set(Some(message)),
+            Err(message) => state.ui_error.set(Some(message)),
         }
     };
 
     let select_folder = move |_| async move {
-        let mut output_folder = state.output_folder;
-        let mut error = state.error;
         match invoke_command("select_folder", &EmptyArgs {}).await {
             Ok(value) => {
                 if let Some(path) = value.as_string() {
-                    output_folder.set(Some(path));
-                    error.set(None);
+                    state.set_output_folder(path);
+                    state.ui_error.set(None);
                 }
             }
-            Err(message) => error.set(Some(message)),
+            Err(message) => state.ui_error.set(Some(message)),
         }
     };
 
-    let start_upscale = move |_| async move {
-        let Some(image_path) = state.image_path.read().clone() else {
-            return;
-        };
-        let Some(output_folder) = state.output_folder.read().clone() else {
-            return;
-        };
-
-        let args = UpscaleArgs {
-            image_path,
-            output_folder,
-            engine: (state.selected_engine)(),
-            model: (state.selected_model)(),
-            scale: (state.scale)(),
-            format: (state.format)(),
-            gpu_id: None,
-        };
-
-        let mut processing = state.is_processing;
-        let mut progress = state.progress;
-        let mut progress_message = state.progress_message;
-        let mut upscaled_path = state.upscaled_image_path;
-        let mut error = state.error;
-        processing.set(true);
-        progress.set(0.0);
-        progress_message.set("Preparing model…".into());
-        upscaled_path.set(None);
-        error.set(None);
-
-        if let Err(message) = invoke_command("upscale_image", &args).await {
-            processing.set(false);
-            error.set(Some(message));
-        }
-    };
-
-    let stop_upscale = move |_| async move {
-        let mut error = state.error;
-        if let Err(message) = invoke_command("stop_upscale", &EmptyArgs {}).await {
-            error.set(Some(message));
-        }
-    };
+    let primary_engine = *state.primary_engine.read();
 
     rsx! {
         aside { class: "sidebar",
@@ -144,7 +81,7 @@ pub fn Sidebar() -> Element {
                     }
                     button {
                         class: "file-picker",
-                        disabled: is_processing,
+                        disabled: controls_disabled,
                         onclick: select_image,
                         span { class: "picker-icon", "+" }
                         span { class: "picker-copy", "{image_label}" }
@@ -155,32 +92,21 @@ pub fn Sidebar() -> Element {
                     div { class: "step-heading",
                         span { class: "step-number", "02" }
                         div {
-                            h2 { "Model & engine" }
-                            p { "Choose the inference pipeline" }
+                            h2 { "Model" }
+                            p { "Choose the upscaling model" }
                         }
                     }
                     select {
                         class: "select-control",
                         value: "{selected_model}",
-                        disabled: is_processing || state.models.read().is_empty(),
-                        oninput: move |event| state.selected_model.set(event.value()),
+                        disabled: controls_disabled || state.models.read().is_empty(),
+                        oninput: move |event| state.set_model(event.value()),
                         if state.models.read().is_empty() {
                             option { "Loading models…" }
                         } else {
                             for model in state.models.read().iter() {
                                 option { value: "{model}", "{model}" }
                             }
-                        }
-                    }
-                    div { class: "format-row engine-row",
-                        label { r#for: "engine", "ENGINE" }
-                        select {
-                            id: "engine",
-                            value: "{selected_engine}",
-                            disabled: is_processing,
-                            oninput: move |event| state.selected_engine.set(event.value()),
-                            option { value: "upscayl", "Upscayl NCNN" }
-                            option { value: "real-esrgan", "Official Real-ESRGAN" }
                         }
                     }
                 }
@@ -195,7 +121,7 @@ pub fn Sidebar() -> Element {
                     }
                     button {
                         class: "file-picker",
-                        disabled: is_processing,
+                        disabled: controls_disabled,
                         onclick: select_folder,
                         span { class: "picker-icon folder", "↗" }
                         span { class: "picker-copy", "{folder_label}" }
@@ -214,8 +140,8 @@ pub fn Sidebar() -> Element {
                         for scale in [2, 3, 4] {
                             button {
                                 class: if selected_scale == scale { "active" } else { "" },
-                                disabled: is_processing,
-                                onclick: move |_| state.scale.set(scale),
+                                disabled: controls_disabled,
+                                onclick: move |_| state.set_scale(scale),
                                 "{scale}×"
                             }
                         }
@@ -224,9 +150,16 @@ pub fn Sidebar() -> Element {
                         label { r#for: "format", "FORMAT" }
                         select {
                             id: "format",
-                            value: "{selected_format}",
-                            disabled: is_processing,
-                            oninput: move |event| state.format.set(event.value()),
+                            value: "{selected_format_value}",
+                            disabled: controls_disabled,
+                            oninput: move |event| {
+                                let format = match event.value().as_str() {
+                                    "jpg" => OutputFormat::Jpg,
+                                    "webp" => OutputFormat::Webp,
+                                    _ => OutputFormat::Png,
+                                };
+                                state.set_format(format);
+                            },
                             option { value: "png", "PNG" }
                             option { value: "jpg", "JPG" }
                             option { value: "webp", "WEBP" }
@@ -235,15 +168,60 @@ pub fn Sidebar() -> Element {
                 }
             }
 
-            if is_processing {
-                button { class: "primary-action stop", onclick: stop_upscale, "Stop upscaling" }
-            } else {
-                button {
-                    class: "primary-action",
-                    disabled: !can_upscale,
-                    onclick: start_upscale,
-                    span { "Upscale image" }
-                    span { class: "action-arrow", "↗" }
+            match run_state {
+                RunState::Running(_) => rsx! {
+                    button {
+                        class: "primary-action stop",
+                        onclick: move |_| async move { state.cancel_active_run().await },
+                        "Stop upscaling"
+                    }
+                },
+                RunState::Cancelling(_) => rsx! {
+                    button { class: "primary-action stop", disabled: true, "Stopping…" }
+                },
+                RunState::DiskWarning(_) => rsx! {
+                    div { class: "sidebar-actions",
+                        button {
+                            class: "primary-action",
+                            onclick: move |_| async move { state.continue_after_disk_warning().await },
+                            "Continue anyway"
+                        }
+                        button { class: "secondary-action full-width", onclick: select_folder, "Choose another destination" }
+                    }
+                },
+                _ => rsx! {
+                    button {
+                        class: "primary-action",
+                        disabled: !can_upscale,
+                        onclick: move |_| async move { state.start_normal_run().await },
+                        span { "Upscale image" }
+                        span { class: "action-arrow", "↗" }
+                    }
+                },
+            }
+
+            details { class: "settings-disclosure",
+                summary { "Device settings" }
+                div { class: "settings-row",
+                    label { r#for: "preferred-engine", "Preferred engine" }
+                    select {
+                        id: "preferred-engine",
+                        disabled: controls_disabled || !*state.preference_initialized.read(),
+                        value: match primary_engine {
+                            Some(UpscaleEngine::RealEsrgan) => "real-esrgan",
+                            _ => "upscayl",
+                        },
+                        oninput: move |event| {
+                            let engine = if event.value() == "real-esrgan" {
+                                UpscaleEngine::RealEsrgan
+                            } else {
+                                UpscaleEngine::Upscayl
+                            };
+                            spawn(async move { state.persist_engine_preference(engine).await });
+                        },
+                        option { value: "upscayl", "Upscayl NCNN" }
+                        option { value: "real-esrgan", "Official Real-ESRGAN" }
+                    }
                 }
             }
             p { class: "privacy-note", "Runs entirely on your Mac. No uploads." }

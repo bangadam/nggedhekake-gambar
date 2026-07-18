@@ -17,9 +17,11 @@ web-sys = "0.3"
 js-sys = "0.3"
 serde = { version = "1", features = ["derive"] }
 serde-wasm-bindgen = "0.6"
+upscale-contract = { package = "nggedhekake-gambar-contract", path = "crates/upscale-contract" }
+uuid = { version = "1", features = ["v4", "js"] }
 
 [workspace]
-members = ["src-tauri"]
+members = ["crates/upscale-contract", "src-tauri"]
 
 [profile.release]
 codegen-units = 1

@@ -4,9 +4,9 @@
   "version": "0.1.0",
   "identifier": "com.bangadamdev.nggedhekake-gambar",
   "build": {
-    "beforeDevCommand": "$HOME/.cargo/bin/dx serve --port 1420 --interactive false",
+    "beforeDevCommand": "dx serve --port 1420 --interactive false",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "$HOME/.cargo/bin/dx bundle --release --debug-symbols false",
+    "beforeBuildCommand": "dx bundle --release --debug-symbols false",
     "frontendDist": "../dist/public"
   },
   "app": {
@@ -30,7 +30,10 @@
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "targets": ["app", "dmg"],
+    "category": "Utility",
+    "shortDescription": "A private, native image upscaler powered by Real-ESRGAN, NCNN, and Vulkan",
+    "longDescription": "Upscale one PNG, JPEG, or WebP image at a time locally on macOS without uploading it.",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -38,9 +41,12 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ],
-    "resources": [
-      "binaries/",
-      "models/"
-    ]
+    "resources": {
+      "binaries/upscayl-bin": "binaries/upscayl-bin",
+      "binaries/realesrgan-ncnn-vulkan": "binaries/realesrgan-ncnn-vulkan",
+      "models/": "models/",
+      "../LICENSE": "licenses/Nggedhekake-Gambar-AGPL-3.0.txt",
+      "binaries/REAL_ESRGAN_NCNN_VULKAN_LICENSE": "licenses/REAL_ESRGAN_NCNN_VULKAN_LICENSE"
+    }
   }
 }
